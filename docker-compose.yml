@@ -21,7 +21,7 @@ services:
       - fluxend_frontend
 
   fluxend_db:
-    image: postgres:latest
+    image: postgres:17
     container_name: fluxend_db
     restart: always
     environment:
