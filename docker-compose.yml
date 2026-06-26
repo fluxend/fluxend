@@ -43,6 +43,7 @@ services:
 
   fluxend_api:
     image: fluxend/api:latest
+    platform: linux/amd64
     container_name: fluxend_api
     restart: always
     environment:
@@ -68,6 +69,7 @@ services:
 
   fluxend_frontend:
     image: fluxend/frontend:latest
+    platform: linux/amd64
     container_name: fluxend_frontend
     restart: always
     environment:
