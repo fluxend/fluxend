@@ -110,6 +110,8 @@ func registerRoutes(e *echo.Echo, container *do.Injector) {
 	routes.RegisterOrganizationRoutes(e, container, authMiddleware)
 	routes.RegisterProjectRoutes(e, container, authMiddleware, allowProjectMiddleware)
 	routes.RegisterTableRoutes(e, container, authMiddleware)
+	routes.RegisterRowRoutes(e, container, authMiddleware)
+	routes.RegisterWebhookRoutes(e, container, authMiddleware)
 	routes.RegisterFormRoutes(e, container, authMiddleware, allowFormMiddleware)
 	routes.RegisterStorageRoutes(e, container, authMiddleware, allowStorageMiddleware)
 	routes.RegisterFunctionRoutes(e, container, authMiddleware)

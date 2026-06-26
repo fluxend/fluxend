@@ -25,6 +25,7 @@ export default [
       ]),
       route("tables/create", "./routes/tables/create.tsx"),
       route("tables/:tableId/edit", "./routes/tables/edit.tsx"),
+      route("tables/:tableId/webhooks", "./routes/tables/webhooks.tsx"),
       route("tables", "./routes/tables/sidebar.tsx", [
         route(":tableId", "./routes/tables/page.tsx"),
       ]),

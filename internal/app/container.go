@@ -24,6 +24,7 @@ import (
 	"fluxend/internal/domain/storage/container"
 	"fluxend/internal/domain/storage/file"
 	"fluxend/internal/domain/user"
+	"fluxend/internal/domain/webhook"
 	"github.com/jmoiron/sqlx"
 	"github.com/samber/do"
 )
@@ -118,6 +119,13 @@ func InitializeContainer() *do.Injector {
 	do.Provide(injector, handlers.NewColumnHandler)
 	do.Provide(injector, handlers.NewIndexHandler)
 	do.Provide(injector, handlers.NewFunctionHandler)
+
+	// --- Webhooks ---
+	do.Provide(injector, repositories.NewWebhookRepository)
+	do.Provide(injector, webhook.NewWebhookPolicy)
+	do.Provide(injector, webhook.NewWebhookService)
+	do.Provide(injector, handlers.NewWebhookHandler)
+	do.Provide(injector, handlers.NewRowHandler)
 
 	// --- Health ---
 	do.Provide(injector, health.NewHealthService)

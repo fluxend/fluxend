@@ -104,52 +104,55 @@ export function createTablesService(authToken: string) {
     return patch(`/tables/public.${tableName}/columns`, data, fetchOptions);
   };
 
+  const createTableRow = async (projectId: string, tableId: string, data: any) => {
+    const fetchOptions: APIRequestOptions = {
+      headers: {
+        "X-Project": projectId,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+        "Prefer": "return=representation",
+      },
+    };
+
+    return post(`/tables/public.${tableId}/rows`, data, fetchOptions);
+  };
+
   const updateTableRow = async (
-    projectId: string, 
-    tableId: string, 
-    rowId: string, 
+    projectId: string,
+    tableId: string,
+    rowId: string,
     data: any,
-    options?: {
-      baseUrl?: string;
-    }
   ) => {
     const fetchOptions: APIRequestOptions = {
       headers: {
         "X-Project": projectId,
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken}`,
-        "Prefer": "return=representation", // Return the updated row
+        "Prefer": "return=representation",
       },
-      baseUrl: options?.baseUrl,
       params: {
-        id: `eq.${rowId}` // PostgREST filter syntax
-      }
+        id: `eq.${rowId}`,
+      },
     };
 
-    return patch(tableId, data, fetchOptions);
+    return patch(`/tables/public.${tableId}/rows`, data, fetchOptions);
   };
 
   const deleteTableRows = async (
     projectId: string,
     tableId: string,
     rowIds: string[],
-    options?: {
-      baseUrl?: string;
-    }
   ) => {
-    // Validate input
     if (!rowIds || rowIds.length === 0) {
-      throw new Error('No row IDs provided for deletion');
+      throw new Error("No row IDs provided for deletion");
     }
 
-    // Escape IDs to prevent injection
-    const escapedIds = rowIds.map(id => 
-      // Remove any special characters that could break the query
-      String(id).replace(/[^a-zA-Z0-9-_]/g, '')
-    ).filter(Boolean);
+    const escapedIds = rowIds
+      .map((id) => String(id).replace(/[^a-zA-Z0-9-_]/g, ""))
+      .filter(Boolean);
 
     if (escapedIds.length === 0) {
-      throw new Error('No valid row IDs provided for deletion');
+      throw new Error("No valid row IDs provided for deletion");
     }
 
     const fetchOptions: APIRequestOptions = {
@@ -157,15 +160,14 @@ export function createTablesService(authToken: string) {
         "X-Project": projectId,
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken}`,
-        "Prefer": "count=exact", // Return count of deleted rows
+        "Prefer": "return=representation",
       },
-      baseUrl: options?.baseUrl,
       params: {
-        id: `in.(${escapedIds.join(",")})` // PostgREST filter syntax for multiple IDs
-      }
+        id: `in.(${escapedIds.join(",")})`,
+      },
     };
 
-    return del(tableId, fetchOptions);
+    return del(`/tables/public.${tableId}/rows`, fetchOptions);
   };
 
   return {
@@ -176,6 +178,7 @@ export function createTablesService(authToken: string) {
     deleteTable,
     createTableColumns,
     updateTableColumns,
+    createTableRow,
     updateTableRow,
     deleteTableRows,
   };

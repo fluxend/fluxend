@@ -27,7 +27,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 import { Button } from "~/components/ui/button";
-import { Trash2, Pencil, FileText } from "lucide-react";
+import { Trash2, Pencil, FileText, Webhook } from "lucide-react";
 import { toast } from "sonner";
 import type { TableRow, CellValue } from "~/types/table";
 
@@ -63,29 +63,21 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
   } = useQuery(columnsQuery(projectId, tableId)) || { data: [] };
 
   const handleCellUpdate = useCallback(async (
-    rowId: string, 
-    columnName: string, 
+    rowId: string,
+    columnName: string,
     value: CellValue,
     rowData: TableRow
   ): Promise<boolean> => {
     try {
-      // Only send the field that changed
       const updateData = {
         [columnName]: value
       };
-      
-      const baseDomain = import.meta.env.VITE_FLX_BASE_DOMAIN;
-      const httpScheme = import.meta.env.VITE_FLX_HTTP_SCHEME;
-      const baseUrl = `${httpScheme}://${projectDetails?.dbName}.${baseDomain}/`;
-      
+
       const response = await services.tables.updateTableRow(
         projectId,
         tableId,
         rowId,
         updateData,
-        {
-          baseUrl,
-        }
       );
 
       if (response.ok) {
@@ -111,7 +103,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
       // Return false to trigger revert in OptimisticTableCell
       return false;
     }
-  }, [projectId, tableId, services.tables, projectDetails?.dbName]);
+  }, [projectId, tableId, services.tables]);
 
   const columns = useMemo(() => {
     if (!columnsData || !Array.isArray(columnsData)) {
@@ -231,7 +223,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
   }, [tableId, projectId, queryClient, navigate]);
 
   const handleBulkDelete = useCallback(async () => {
-    if (!tableId || !projectId || !projectDetails?.dbName || selectedRows.length === 0) return;
+    if (!tableId || !projectId || selectedRows.length === 0) return;
 
     const rowIds = selectedRows.map(row => row.id).filter(Boolean);
     if (rowIds.length === 0) {
@@ -240,19 +232,12 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
     }
 
     setIsDeletingRows(true);
-    
-    try {
-      const baseDomain = import.meta.env.VITE_FLX_BASE_DOMAIN;
-      const httpScheme = import.meta.env.VITE_FLX_HTTP_SCHEME;
-      const baseUrl = `${httpScheme}://${projectDetails.dbName}.${baseDomain}/`;
 
+    try {
       const response = await services.tables.deleteTableRows(
         projectId,
         tableId,
         rowIds,
-        {
-          baseUrl,
-        }
       );
 
       if (response.ok) {
@@ -289,7 +274,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
     } finally {
       setIsDeletingRows(false);
     }
-  }, [tableId, projectId, projectDetails?.dbName, queryClient, pagination, filterParams, services.tables, selectedRows]);
+  }, [tableId, projectId, queryClient, pagination, filterParams, services.tables, selectedRows]);
 
   const noTableSelected = !tableId;
 
@@ -401,6 +386,16 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
                   title="View API Docs"
                 >
                   <FileText />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/projects/${projectId}/tables/${tableId}/webhooks`)}
+                  title="Webhooks"
+                >
+                  <Webhook />
                 </Button>
                 <Button
                   type="button"

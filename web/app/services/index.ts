@@ -6,6 +6,7 @@ import { createUserService } from "./user";
 import { createLogsService } from "./logs";
 import { createSettingsService } from "./settings";
 import { createStorageService } from "./storage";
+import { createWebhooksService } from "./webhooks";
 
 export function initializeServices(authToken: string) {
   return {
@@ -17,6 +18,7 @@ export function initializeServices(authToken: string) {
     logs: createLogsService(authToken),
     settings: createSettingsService(authToken),
     storage: createStorageService(authToken),
+    webhooks: createWebhooksService(authToken),
   };
 }
 
