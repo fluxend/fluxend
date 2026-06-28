@@ -19,6 +19,7 @@ func RegisterProjectRoutes(e *echo.Echo, container *do.Injector, authMiddleware 
 	projectsGroup.DELETE("/:projectUUID", projectController.Delete)
 	projectsGroup.GET("/:projectUUID/openapi", projectController.GenerateOpenAPI)
 	projectsGroup.GET("/:projectUUID/logs", projectController.ListLogs)
+	projectsGroup.GET("/:projectUUID/token", projectController.Token)
 
 	projectsGroup.GET("/:projectUUID/stats", statHandler.Retrieve)
 

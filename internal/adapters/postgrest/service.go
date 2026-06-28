@@ -22,7 +22,6 @@ type Config struct {
 	DBHost        string
 	DBSchema      string
 	DBRole        string
-	JWTSecret     string
 	BaseDomain    string
 	CustomOrigins string
 	URLScheme     string
@@ -45,7 +44,6 @@ func NewPostgrestService(injector *do.Injector) (shared.PostgrestService, error)
 		DBHost:        os.Getenv("POSTGREST_DB_HOST"),
 		DBSchema:      os.Getenv("POSTGREST_DEFAULT_SCHEMA"),
 		DBRole:        os.Getenv("POSTGREST_DEFAULT_ROLE"),
-		JWTSecret:     os.Getenv("JWT_SECRET"),
 		BaseDomain:    os.Getenv("BASE_DOMAIN"),
 		URLScheme:     os.Getenv("URL_SCHEME"),
 		CustomOrigins: corsOrigins,
@@ -59,8 +57,8 @@ func NewPostgrestService(injector *do.Injector) (shared.PostgrestService, error)
 	}, nil
 }
 
-func (s *ServiceImpl) StartContainer(dbName string) {
-	if err := pkg.ExecuteCommand(s.buildStartCommand(dbName)); err != nil {
+func (s *ServiceImpl) StartContainer(dbName, jwtSecret string) {
+	if err := pkg.ExecuteCommand(s.buildStartCommand(dbName, jwtSecret)); err != nil {
 		log.Error().
 			Str("action", constants.ActionPostgrest).
 			Str("db", dbName).
@@ -145,14 +143,14 @@ func (s *ServiceImpl) HasContainer(dbName string) bool {
 	return strings.Contains(output, "true")
 }
 
-func (s *ServiceImpl) buildStartCommand(dbName string) []string {
+func (s *ServiceImpl) buildStartCommand(dbName, jwtSecret string) []string {
 	response := []string{
 		"docker", "run", "-d", "--name", s.getContainerName(dbName),
 		"--network", "fluxend_network",
 		"-e", fmt.Sprintf("PGRST_DB_URI=postgres://%s:%s@%s/%s", s.config.DBUser, s.config.DBPassword, s.config.DBHost, dbName),
 		"-e", "PGRST_DB_ANON_ROLE=" + s.config.DBRole,
 		"-e", "PGRST_DB_SCHEMA=" + s.config.DBSchema,
-		"-e", "PGRST_JWT_SECRET=" + s.config.JWTSecret,
+		"-e", "PGRST_JWT_SECRET=" + jwtSecret,
 		"-e", "PGRST_SERVER_CORS_ALLOWED_ORIGINS=" + s.config.CustomOrigins,
 		"-e", "PGRST_SERVER_CORS_ALLOWED_HEADERS=*",
 		"-e", "PGRST_SERVER_CORS_ALLOWED_METHODS=GET,POST,PATCH,PUT,DELETE,OPTIONS,HEAD",

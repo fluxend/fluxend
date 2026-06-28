@@ -119,6 +119,46 @@ func (ph *ProjectHandler) Show(c echo.Context) error {
 	return response.SuccessResponse(c, mapper.ToProjectResource(&fetchedProject))
 }
 
+// Token returns a JWT signed with the project's secret for PostgREST access
+//
+// @Summary Get project token
+// @Description Get a JWT token signed with the project's signing secret for direct PostgREST access
+// @Tags Projects
+//
+// @Accept json
+// @Produce json
+//
+// @Param Authorization header string true "Bearer Token"
+// @Param projectUUID path string true "Project UUID"
+//
+// @Success 200 {object} response.Response "Project token"
+// @Failure 400 {object} response.BadRequestErrorResponse "Bad request response"
+// @Failure 401 {object} response.UnauthorizedErrorResponse "Unauthorized response"
+// @Failure 403 {object} response.ForbiddenErrorResponse "Forbidden response"
+// @Failure 500 {object} response.InternalServerErrorResponse "Internal server error response"
+//
+// @Router /projects/{projectUUID}/token [get]
+func (ph *ProjectHandler) Token(c echo.Context) error {
+	var request dto.DefaultRequest
+	if err := request.BindAndValidate(c); err != nil {
+		return response.UnprocessableResponse(c, err)
+	}
+
+	authUser, _ := auth.NewAuth(c).User()
+
+	projectUUID, err := request.GetUUIDPathParam(c, "projectUUID", true)
+	if err != nil {
+		return response.BadRequestResponse(c, err.Error())
+	}
+
+	token, err := ph.projectService.GetProjectToken(projectUUID, authUser)
+	if err != nil {
+		return response.ErrorResponse(c, err)
+	}
+
+	return response.SuccessResponse(c, map[string]string{"token": token})
+}
+
 // Store creates a new project
 //
 // @Summary Create project
