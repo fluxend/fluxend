@@ -68,7 +68,7 @@ func TestProjectToken_Suite(t *testing.T) {
 	authToken := registeredUser.Content.Token
 
 	// Create an organization
-	orgInput := map[string]string{"name": pkg.Faker.Company().Name()}
+	orgInput := map[string]string{"name": "test-org-" + pkg.Faker.RandomStringWithLength(6)}
 	orgResp := server.PostJSONWithAuth(t, "/organizations", authToken, orgInput)
 	defer orgResp.Body.Close()
 	require.Equal(t, http.StatusCreated, orgResp.StatusCode)
