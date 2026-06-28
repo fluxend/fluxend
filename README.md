@@ -19,6 +19,7 @@
   <a href="https://docs.fluxend.app/">📚 Docs</a> •
   <a href="https://docs.fluxend.app/quickstart">⚡ Quick Start</a> •
   <a href="https://docs.fluxend.app/faq">❓ FAQ</a> •
+  <a href="https://docs.fluxend.app/development">🛠️ Development</a> •
   <a href="https://github.com/fluxend/fluxend/issues">🐛 Issues</a>
 </p>
 
@@ -117,51 +118,25 @@ Full setup guide: [docs.fluxend.app/quickstart](https://docs.fluxend.app/quickst
 
 ## How It Works
 
-```
-Your client app
-      │
-      ▼
-┌─────────────┐     ┌─────────────────────────────────────┐
-│  Fluxend    │     │  Per-project PostgREST containers   │
-│  API (Go)   │────▶│  Each signed with its own JWT secret│
-│             │     │  Routed by Traefik                  │
-└─────────────┘     └──────────────┬──────────────────────┘
-      │                            │
-      ▼                            ▼
-┌─────────────────────────────────────────────────────────┐
-│              PostgreSQL 17                              │
-│   fluxend schema (users, orgs, projects, settings)     │
-│   Per-project user databases (udb*)                    │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Client([Client app])
+
+    Client -->|"1. Authenticate"| API["Fluxend API (Go)"]
+    API -->|"2. Provision"| PG["Per-project PostgREST containers\nEach with its own JWT signing secret\nRouted by Traefik"]
+    API -->|"3. Return project-scoped token"| Client
+    Client -->|"4. Direct data access"| PG
+    API --- DB[("PostgreSQL 17\nfluxend schema · per-project databases")]
+    PG --- DB
 ```
 
 1. Users authenticate against the Fluxend API and receive a JWT.
-2. They create projects. Each project provisions a dedicated PostgreSQL database and a PostgREST container with its own signing secret.
+2. Each project provisions a dedicated PostgreSQL database and a PostgREST container with its own signing secret.
 3. Clients call `GET /projects/:id/token` to get a project-scoped token.
 4. They use that token directly against the project's PostgREST URL for data access.
 5. Traefik routes traffic and handles TLS termination.
 
 ---
-
-## API Overview
-
-| Resource | Endpoints |
-|---|---|
-| Users | register, login, logout, profile |
-| Organizations | CRUD, member management |
-| Projects | CRUD, token, OpenAPI, logs, stats |
-| Tables | CRUD, rename, duplicate, upload |
-| Columns | CRUD, rename |
-| Indexes | CRUD |
-| Functions | CRUD, invoke |
-| Storage containers | CRUD |
-| Files | upload, download, rename, delete |
-| Forms | CRUD |
-| Form fields | CRUD |
-| Form responses | CRUD |
-| Backups | create, list, delete |
-| Settings | list, update, reset |
-| Health | pulse |
 
 Full API reference: [docs.fluxend.app](https://docs.fluxend.app)
 
@@ -238,7 +213,7 @@ go test ./tests/integration/...
 go build ./cmd/...
 ```
 
-See [AGENTS.md](./AGENTS.md) for architecture notes and coding standards.
+See [AGENTS.md](./AGENTS.md) for architecture notes and coding standards, and [docs.fluxend.app/development](https://docs.fluxend.app/development) for the full development guide.
 
 - Check [open issues](https://github.com/fluxend/fluxend/issues) for things to work on
 - Open a PR. Reviews are fast.
