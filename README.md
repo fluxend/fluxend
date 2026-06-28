@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>Open source, self-hosted Backend-as-a-Service built with Go.</strong><br>
-  Instant REST APIs, auth, file storage, forms, and audit logs — all over your own PostgreSQL database.
+  Instant REST APIs, auth, file storage, forms, and audit logs. All on your own PostgreSQL database.
 </p>
 
 <p align="center">
@@ -30,11 +30,11 @@
 
 ## What is Fluxend?
 
-Fluxend is a **self-hosted, open source Backend-as-a-Service (BaaS)**. It gives you the developer experience of Firebase or Supabase — instant APIs, authentication, file storage — while keeping your data on infrastructure you control.
+Fluxend is a self-hosted, open source Backend-as-a-Service (BaaS). It gives you the developer experience of Firebase or Supabase: instant APIs, authentication, and file storage. Your data stays on infrastructure you control.
 
-You define your database tables through the UI or API. Fluxend generates fully functional REST endpoints for them automatically, backed by PostgreSQL and served through PostgREST. No code generation. No lock-in. No monthly seat fees.
+You define your database tables through the UI or API. Fluxend generates fully functional REST endpoints automatically, backed by PostgreSQL and served through PostgREST. No code generation. No lock-in. No monthly seat fees.
 
-**Built with:** Go 1.23 · Echo · PostgreSQL 17 · PostgREST · Docker · React 19 · TypeScript
+Go 1.23 · Echo · PostgreSQL 17 · PostgREST · Docker · React 19 · TypeScript
 
 ---
 
@@ -60,47 +60,47 @@ You define your database tables through the UI or API. Fluxend generates fully f
 ## Features
 
 ### Authentication and Access Control
-- **JWT authentication** — login, registration, token invalidation, session limits
-- **Organizations and RBAC** — multi-tenant support with Owner, Admin, Developer, and Explorer roles
-- **Per-project JWT secrets** — each project gets its own cryptographic signing secret; a token from one project is rejected by another
-- **Row-level security** — access control enforced at the database level via PostgreSQL roles
+- JWT authentication with login, registration, token invalidation, and session limits
+- Organizations with four roles: Owner, Admin, Developer, and Explorer
+- Per-project JWT secrets. Each project gets its own signing secret; a token from one project is rejected by another
+- Row-level security enforced at the database level through PostgreSQL roles
 
 ### Database and REST APIs
-- **Instant REST APIs** — create a table, get full CRUD endpoints immediately via PostgREST
-- **Schema management** — create, rename, and delete tables and columns through the API or UI
-- **Index management** — add and remove database indexes without writing SQL
-- **Stored functions** — define and call PostgreSQL functions through a REST interface
-- **CSV and XLSX import** — upload a spreadsheet, Fluxend creates the table and API for you
-- **Table duplication** — clone an existing table structure in one call
-- **OpenAPI export** — auto-generated OpenAPI documentation for every project
+- Instant REST APIs. Create a table, get full CRUD endpoints immediately through PostgREST
+- Schema management: create, rename, and delete tables and columns through the API or UI
+- Index management without writing SQL
+- Stored functions: define and call PostgreSQL functions through a REST interface
+- CSV and XLSX import. Upload a spreadsheet; Fluxend creates the table and API for you
+- Table duplication in one call
+- Auto-generated OpenAPI documentation for every project
 
 ### Storage
-- **Multi-driver file storage** — S3, Backblaze B2, Dropbox, or local filesystem
-- **File containers** — organize files into named buckets
-- **Download endpoints** — serve files through the API with access control
-- **Database backups** — scheduled or on-demand PostgreSQL backups per project
+- File storage with four drivers: S3, Backblaze B2, Dropbox, or local filesystem
+- File containers to organize uploads into named buckets
+- Download endpoints with access control
+- PostgreSQL backups per project, on-demand or scheduled
 
 ### Forms
-- **Smart forms** — create forms with typed fields and validation rules
-- **Form responses** — collect and query submissions through the API
-- **Field types** — text, number, boolean, and more
+- Forms with typed fields and validation rules
+- Submissions collected and queryable through the API
+- Field types: text, number, boolean, and more
 
 ### Observability
-- **Audit logs** — every API request to PostgREST endpoints is logged with user, method, status, and timestamp
-- **Database statistics** — table sizes, row counts, and index usage per project
-- **Health endpoint** — check container and database status across all projects
+- Audit logs on every PostgREST request: user, method, status, and timestamp
+- Database statistics: table sizes, row counts, and index usage per project
+- Health endpoint to check container and database status across all projects
 
 ### Developer Experience
-- **Self-contained Docker deployment** — Traefik, PostgreSQL, API, and frontend in one `docker compose up`
-- **CLI commands** — restart PostgREST instances, run migrations, seed settings from the command line
-- **Sentry integration** — error tracking built in, opt-in via environment variable
-- **CORS configuration** — per-deployment origin allowlist
+- Single `docker compose up` deploys Traefik, PostgreSQL, the API, and the frontend together
+- CLI commands to restart PostgREST instances, run migrations, and seed settings
+- Sentry integration, opt-in via environment variable
+- Per-deployment CORS origin allowlist
 
 ---
 
 ## Quick Start
 
-**Requirements:** Docker, Docker Compose
+Requires Docker and Docker Compose.
 
 ```bash
 git clone https://github.com/fluxend/fluxend.git
@@ -191,25 +191,35 @@ Full API reference: [docs.fluxend.app](https://docs.fluxend.app)
 
 ## Use Cases
 
-**SaaS backends** — multi-tenant architecture with per-org projects and RBAC out of the box.
+**SaaS products**
 
-**Internal tools** — spin up a data API from an existing PostgreSQL schema in minutes, no backend code required.
+The multi-tenant org structure and per-project RBAC are ready from day one. No extra configuration needed.
 
-**Rapid prototyping** — go from idea to working API in under five minutes. Replace Fluxend with a custom service later if you need to; your data stays in Postgres.
+**Internal tools**
 
-**Data collection** — use the forms API to collect submissions from external sources without managing a backend.
+Point Fluxend at an existing PostgreSQL schema and get a working data API in minutes. No backend code needed.
 
-**Firebase or Supabase migration** — move off a vendor-hosted BaaS without rewriting your frontend. Fluxend speaks the same REST patterns.
+**Rapid prototyping**
+
+Go from idea to working API in under five minutes. Replace Fluxend with a custom service later if you outgrow it; your data stays in Postgres.
+
+**Data collection**
+
+Use the forms API to collect submissions from external sources without managing a backend.
+
+**Firebase or Supabase migration**
+
+Move off a vendor-hosted BaaS without rewriting your frontend. Fluxend speaks the same REST patterns.
 
 ---
 
 ## Tech Stack
 
-**Backend:** Go 1.23 · Echo v4 · sqlx · PostgreSQL 17 · PostgREST · samber/do (DI) · golang-jwt · AWS SDK v2 · zerolog · Sentry
+Backend: Go 1.23 · Echo v4 · sqlx · PostgreSQL 17 · PostgREST · samber/do (DI) · golang-jwt · AWS SDK v2 · zerolog · Sentry
 
-**Frontend:** React 19 · React Router 7 · TanStack Query · Tailwind CSS 4 · shadcn/ui · TypeScript
+Frontend: React 19 · React Router 7 · TanStack Query · Tailwind CSS 4 · shadcn/ui · TypeScript
 
-**Infrastructure:** Docker · Docker Compose · Traefik v2 · goose (migrations)
+Infrastructure: Docker · Docker Compose · Traefik v2 · goose (migrations)
 
 ---
 
@@ -231,7 +241,7 @@ go build ./cmd/...
 See [AGENTS.md](./AGENTS.md) for architecture notes and coding standards.
 
 - Check [open issues](https://github.com/fluxend/fluxend/issues) for things to work on
-- Open a PR — reviews are fast
+- Open a PR. Reviews are fast.
 
 ---
 
