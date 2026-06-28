@@ -188,15 +188,6 @@ Move off a vendor-hosted BaaS without rewriting your frontend. Fluxend speaks th
 
 ---
 
-## Tech Stack
-
-Backend: Go 1.23 · Echo v4 · sqlx · PostgreSQL 17 · PostgREST · samber/do (DI) · golang-jwt · AWS SDK v2 · zerolog · Sentry
-
-Frontend: React 19 · React Router 7 · TanStack Query · Tailwind CSS 4 · shadcn/ui · TypeScript
-
-Infrastructure: Docker · Docker Compose · Traefik v2 · goose (migrations)
-
----
 
 ## Contributing
 
