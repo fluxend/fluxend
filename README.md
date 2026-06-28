@@ -142,27 +142,6 @@ Full API reference: [docs.fluxend.app](https://docs.fluxend.app)
 
 ---
 
-## Environment Variables
-
-| Variable | Description |
-|---|---|
-| `DATABASE_HOST` | PostgreSQL host |
-| `DATABASE_USER` | PostgreSQL user |
-| `DATABASE_PASSWORD` | PostgreSQL password |
-| `DATABASE_NAME` | PostgreSQL database name |
-| `JWT_SECRET` | Secret for signing console/auth tokens (min 32 chars) |
-| `BASE_DOMAIN` | Root domain for Traefik routing |
-| `URL_SCHEME` | `http` or `https` |
-| `POSTGREST_DB_USER` | PostgreSQL user for PostgREST connections |
-| `POSTGREST_DB_PASSWORD` | PostgreSQL password for PostgREST connections |
-| `POSTGREST_DB_HOST` | PostgreSQL host for PostgREST containers |
-| `POSTGREST_DEFAULT_SCHEMA` | Default schema exposed by PostgREST |
-| `POSTGREST_DEFAULT_ROLE` | Anonymous role for PostgREST |
-| `STORAGE_DRIVER` | `local`, `s3`, `backblaze`, or `dropbox` |
-| `CUSTOM_ORIGINS` | Comma-separated CORS allowed origins |
-| `SENTRY_DSN` | Optional Sentry DSN for error tracking |
-
----
 
 ## Use Cases
 
