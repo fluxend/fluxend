@@ -107,10 +107,10 @@ func (r *ProjectRepository) Create(project *project.Project) (*project.Project, 
 	return project, r.db.WithTransaction(func(tx shared.Tx) error {
 		query := `
 			INSERT INTO fluxend.projects (
-				name, db_name, description, db_port, 
-				organization_uuid, created_by, updated_by
-			) 
-			VALUES ($1, $2, $3, $4, $5, $6, $7) 
+				name, db_name, description, db_port,
+				organization_uuid, created_by, updated_by, jwt_secret
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING uuid
 		`
 
@@ -123,6 +123,7 @@ func (r *ProjectRepository) Create(project *project.Project) (*project.Project, 
 			project.OrganizationUuid,
 			project.CreatedBy,
 			project.UpdatedBy,
+			project.JWTSecret,
 		).Scan(&project.Uuid)
 	})
 }

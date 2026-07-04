@@ -17,6 +17,7 @@ type Project struct {
 	Description      string    `db:"description"`
 	DBName           string    `db:"db_name"`
 	DBPort           int       `db:"db_port"`
+	JWTSecret        string    `db:"jwt_secret"`
 	CreatedAt        time.Time `db:"created_at"`
 	UpdatedAt        time.Time `db:"updated_at"`
 }

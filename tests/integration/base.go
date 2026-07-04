@@ -124,6 +124,21 @@ func (ts *TestServer) PutJSONWithAuth(t *testing.T, endpoint, token string, data
 	return resp
 }
 
+func (ts *TestServer) PostJSONWithAuth(t *testing.T, endpoint, token string, data interface{}) *http.Response {
+	jsonData, err := json.Marshal(data)
+	assert.NoError(t, err, "Failed to marshal JSON data")
+
+	req, err := http.NewRequest("POST", ts.BaseURL+endpoint, bytes.NewBuffer(jsonData))
+	assert.NoError(t, err, "Failed to create POST request")
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := ts.Client.Do(req)
+	assert.NoError(t, err, "Failed to send POST request")
+
+	return resp
+}
+
 func (ts *TestServer) PostWithAuth(t *testing.T, endpoint, token string) *http.Response {
 	req, err := http.NewRequest("POST", ts.BaseURL+endpoint, nil)
 	assert.NoError(t, err, "Failed to create POST request")

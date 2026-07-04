@@ -1,12 +1,15 @@
 package project
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fluxend/internal/domain/auth"
 	"fluxend/internal/domain/shared"
 	"fluxend/pkg/errors"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/samber/do"
-	"math/rand"
+	mathrand "math/rand"
 	"strings"
 	"time"
 )
@@ -15,6 +18,7 @@ type Service interface {
 	List(paginationParams shared.PaginationParams, organizationUUID uuid.UUID, authUser auth.User) ([]Project, error)
 	GetByUUID(projectUUID uuid.UUID, authUser auth.User) (Project, error)
 	GetDatabaseNameByUUID(projectUUID uuid.UUID, authUser auth.User) (string, error)
+	GetProjectToken(projectUUID uuid.UUID, authUser auth.User) (string, error)
 	Create(request *CreateProjectInput, authUser auth.User) (Project, error)
 	Update(projectUUID uuid.UUID, authUser auth.User, request *UpdateProjectInput) (*Project, error)
 	Delete(projectUUID uuid.UUID, authUser auth.User) (bool, error)
@@ -91,6 +95,7 @@ func (s *ServiceImpl) Create(request *CreateProjectInput, authUser auth.User) (P
 		OrganizationUuid: request.OrganizationUUID,
 		DBName:           s.generateDBName(),
 		DBPort:           s.generateDBPort(),
+		JWTSecret:        s.generateJWTSecret(),
 		CreatedBy:        authUser.Uuid,
 		UpdatedBy:        authUser.Uuid,
 	}
@@ -108,7 +113,7 @@ func (s *ServiceImpl) Create(request *CreateProjectInput, authUser auth.User) (P
 		return Project{}, err
 	}
 
-	go s.postgrestService.StartContainer(projectInput.DBName)
+	go s.postgrestService.StartContainer(projectInput.DBName, projectInput.JWTSecret)
 
 	return projectInput, nil
 }
@@ -161,7 +166,35 @@ func (s *ServiceImpl) generateDBName() string {
 }
 
 func (s *ServiceImpl) generateDBPort() int {
-	return rand.Intn(65535-5000+1) + 5000
+	return mathrand.Intn(65535-5000+1) + 5000
+}
+
+func (s *ServiceImpl) generateJWTSecret() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func (s *ServiceImpl) GetProjectToken(projectUUID uuid.UUID, authUser auth.User) (string, error) {
+	fetchedProject, err := s.projectRepo.GetByUUID(projectUUID)
+	if err != nil {
+		return "", err
+	}
+
+	if !s.projectPolicy.CanAccess(fetchedProject.OrganizationUuid, authUser) {
+		return "", errors.NewForbiddenError("project.error.viewForbidden")
+	}
+
+	role := "usr_" + strings.ReplaceAll(authUser.Uuid.String(), "-", "_")
+	claims := jwt.MapClaims{
+		"role": role,
+		"exp":  time.Now().Add(time.Hour * 24).Unix(),
+		"iat":  time.Now().Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(fetchedProject.JWTSecret))
 }
 
 func (s *ServiceImpl) validateNameForDuplication(name string, organizationUUID uuid.UUID) error {

@@ -51,7 +51,7 @@ func restartPostgrestInstances() error {
 			postgrestService.RemoveContainer(currentProject.DBName)
 		}
 
-		postgrestService.StartContainer(currentProject.DBName)
+		postgrestService.StartContainer(currentProject.DBName, currentProject.JWTSecret)
 	}
 
 	return nil
