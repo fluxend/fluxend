@@ -1,21 +1,6 @@
 name: Build and Deploy
 on:
-  push:
-    branches: [ "main" ] # Only deploy on main branch pushes
-    paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '*.md'
-      - '.gitignore'
-      - 'LICENSE'
-  #pull_request:
-  #  branches: [ "main" ] # Build and test on PRs to main
-  #  paths-ignore:
-  #    - 'README.md'
-  #    - 'docs/**'
-  #    - '*.md'
-  #    - '.gitignore'
-  #    - 'LICENSE'
+  workflow_dispatch: # Deploy manually from the Actions tab
 
 env:
   REGISTRY: docker.io
