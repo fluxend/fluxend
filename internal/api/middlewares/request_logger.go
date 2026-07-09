@@ -18,6 +18,8 @@ import (
 
 var skippableEndpointPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/projects/[a-f0-9-]{36}/logs$`),
+	// PostgREST proxy requests are logged separately by the proxy handler
+	regexp.MustCompile(`^/rest/`),
 }
 
 func RequestLogger(requestLogRepo logging.Repository) echo.MiddlewareFunc {
@@ -28,12 +30,6 @@ func RequestLogger(requestLogRepo logging.Repository) echo.MiddlewareFunc {
 				if pattern.MatchString(c.Request().URL.Path) {
 					return next(c)
 				}
-			}
-
-			if strings.Contains(c.Request().URL.Path, "logs/capture") {
-				// Skip logging for the PostgREST capture endpoint
-				// This is used to capture logs from PostgREST requests
-				return next(c)
 			}
 
 			request := c.Request()

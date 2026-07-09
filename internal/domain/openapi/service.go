@@ -21,7 +21,7 @@ const (
 	apiVersion           = "1.0.0"
 	apiTitleScheme       = "REST API for %s"
 	apiDescriptionScheme = "Automatically generated REST API for the %s project"
-	apiServerScheme      = "%s://%s.%s"
+	apiServerScheme      = "%s/rest/%s"
 	serverTitle          = "Default API Server"
 )
 
@@ -143,7 +143,7 @@ func (s *ServiceImpl) generateOpenAPISpec(project *project.Project, tables []dat
 		},
 		Servers: []Server{
 			{
-				URL:         fmt.Sprintf(apiServerScheme, os.Getenv("URL_SCHEME"), project.DBName, os.Getenv("BASE_DOMAIN")),
+				URL:         fmt.Sprintf(apiServerScheme, os.Getenv("API_URL"), project.DBName),
 				Description: serverTitle,
 			},
 		},

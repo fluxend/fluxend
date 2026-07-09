@@ -113,7 +113,7 @@ func (s *ServiceImpl) Create(request *CreateProjectInput, authUser auth.User) (P
 		return Project{}, err
 	}
 
-	go s.postgrestService.StartContainer(projectInput.DBName, projectInput.JWTSecret)
+	go s.postgrestService.Start(projectInput.DBName, projectInput.JWTSecret)
 
 	return projectInput, nil
 }
@@ -156,7 +156,7 @@ func (s *ServiceImpl) Delete(projectUUID uuid.UUID, authUser auth.User) (bool, e
 		return false, err
 	}
 
-	go s.postgrestService.RemoveContainer(fetchedProject.DBName)
+	go s.postgrestService.Stop(fetchedProject.DBName)
 
 	return s.projectRepo.Delete(projectUUID)
 }

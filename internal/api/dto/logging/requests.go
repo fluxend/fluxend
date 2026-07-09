@@ -56,25 +56,3 @@ func (r *ListRequest) BindAndValidate(c echo.Context) []string {
 
 	return nil
 }
-
-type StoreRequest struct {
-	dto.BaseRequest
-	Endpoint  string `json:"endpoint"`
-	DbName    string `json:"DbName"`
-	IPAddress string `json:"ipAddress"`
-	Host      string `json:"host"`
-	Method    string `json:"method"`
-}
-
-func (r *StoreRequest) BindAndValidate(c echo.Context) []string {
-	if err := c.Bind(r); err != nil {
-		return []string{"Invalid request payload"}
-	}
-
-	r.Method = c.Request().Header.Get("X-Forwarded-Method")
-	r.Endpoint = c.Request().Header.Get("X-Forwarded-Uri")
-	r.Host = c.Request().Header.Get("X-Forwarded-Host")
-	r.IPAddress = c.Request().Header.Get("X-Real-Ip")
-
-	return nil
-}

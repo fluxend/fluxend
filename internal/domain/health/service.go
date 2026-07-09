@@ -79,8 +79,8 @@ func (s *ServiceImpl) Pulse(authUser auth.User) (Health, error) {
 		log.Error().Msg("Failed to list projects: " + err.Error())
 	} else {
 		for _, currentProject := range allProjects {
-			if !s.postgrestService.HasContainer(currentProject.DBName) {
-				log.Error().Msgf("Expected PostgREST container for project %s does not exist", currentProject.DBName)
+			if !s.postgrestService.IsRunning(currentProject.DBName) {
+				log.Error().Msgf("Expected PostgREST process for project %s is not running", currentProject.DBName)
 
 				response.PostgrestStatus = statusError
 				break

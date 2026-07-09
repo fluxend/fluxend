@@ -1,8 +1,10 @@
 package shared
 
 type PostgrestService interface {
-	StartContainer(dbName, jwtSecret string)
-	RemoveContainer(dbName string)
-	HasContainer(dbName string) bool
+	Start(dbName, jwtSecret string)
+	StartAll()
+	Stop(dbName string)
+	IsRunning(dbName string) bool
+	Endpoint(dbName string) (string, bool)
 	RefreshSchemaCache(dbName string)
 }
