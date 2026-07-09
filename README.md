@@ -92,7 +92,7 @@ Go 1.23 · Echo · PostgreSQL 17 · PostgREST · Docker · React 19 · TypeScrip
 - Health endpoint to check container and database status across all projects
 
 ### Developer Experience
-- Single `docker compose up` deploys Traefik, PostgreSQL, the API, and the frontend together
+- Single `docker compose up` deploys Caddy, PostgreSQL, the API, and the frontend together
 - CLI commands to restart PostgREST instances, run migrations, and seed settings
 - Sentry integration, opt-in via environment variable
 - Per-deployment CORS origin allowlist
@@ -123,7 +123,7 @@ flowchart TD
     Client([Client app])
 
     Client -->|"1. Authenticate"| API["Fluxend API (Go)"]
-    API -->|"2. Provision"| PG["Per-project PostgREST containers\nEach with its own JWT signing secret\nRouted by Traefik"]
+    API -->|"2. Provision"| PG["Per-project PostgREST processes\nEach with its own JWT signing secret\nProxied through the API at /rest/{project}"]
     API -->|"3. Return project-scoped token"| Client
     Client -->|"4. Direct data access"| PG
     API --- DB[("PostgreSQL 17\nfluxend schema · per-project databases")]
@@ -131,10 +131,10 @@ flowchart TD
 ```
 
 1. Users authenticate against the Fluxend API and receive a JWT.
-2. Each project provisions a dedicated PostgreSQL database and a PostgREST container with its own signing secret.
+2. Each project provisions a dedicated PostgreSQL database and a PostgREST process with its own signing secret, managed by the API.
 3. Clients call `GET /projects/:id/token` to get a project-scoped token.
-4. They use that token directly against the project's PostgREST URL for data access.
-5. Traefik routes traffic and handles TLS termination.
+4. They use that token against the project's API at `/rest/{project}` for data access.
+5. Caddy handles TLS termination for the API and console.
 
 ---
 
