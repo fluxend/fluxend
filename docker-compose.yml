@@ -1,19 +1,20 @@
 services:
-  traefik:
-    image: traefik:v2.11
-    container_name: traefik
+  caddy:
+    image: caddy:2
+    container_name: caddy
     restart: always
     ports:
       - "80:80"
       - "443:443"
-    command:
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--log.level=DEBUG"
+    environment:
+      - URL_SCHEME=${URL_SCHEME}
+      - BASE_DOMAIN=${BASE_DOMAIN}
+      - API_SUB_DOMAIN=${API_SUB_DOMAIN}
+      - CONSOLE_SUB_DOMAIN=${CONSOLE_SUB_DOMAIN}
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     networks:
       - fluxend_network
     depends_on:
@@ -58,13 +59,7 @@ services:
         condition: service_healthy
     networks:
       - fluxend_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fluxend_api.rule=Host(`${API_SUB_DOMAIN}.${BASE_DOMAIN}`)"
-      - "traefik.http.routers.fluxend_api.entrypoints=web"
-      - "traefik.http.services.fluxend_api.loadbalancer.server.port=8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock # TODO: Figure out a better way to handle this
       - ./.env:/app/.env:ro # Always read from host
 
   fluxend_frontend:
@@ -78,11 +73,6 @@ services:
       - fluxend_api
     networks:
       - fluxend_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fluxend_frontend.rule=Host(`${CONSOLE_SUB_DOMAIN}.${BASE_DOMAIN}`)"
-      - "traefik.http.routers.fluxend_frontend.entrypoints=web"
-      - "traefik.http.services.fluxend_frontend.loadbalancer.server.port=3000"
 
 networks:
   fluxend_network:
@@ -91,3 +81,5 @@ networks:
 
 volumes:
   fluxend_db_data:
+  caddy_data:
+  caddy_config:

@@ -6,13 +6,7 @@ DATABASE_CONNECTION="user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=
 # Include other files
 include scripts/makefiles/*.mk
 
-ifeq ($(URL_SCHEME),https)
-    COMPOSE_FILES = -f docker-compose.yml -f docker-compose.ssl.yml
-else
-    COMPOSE_FILES = -f docker-compose.yml
-endif
-
-DOCKER_COMPOSE = docker-compose $(COMPOSE_FILES)
+DOCKER_COMPOSE = docker-compose -f docker-compose.yml
 
 help: ## Shows this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_\-\.]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -80,7 +74,7 @@ restart.app: ## Restart both API and frontend containers only
 	@make restart.frontend
 
 down: ## Stop the project
-	@$(DOCKER_COMPOSE) down
+	@$(DOCKER_COMPOSE) down --remove-orphans
 
 login.api: ## Login to API container
 	@docker exec -it $${API_CONTAINER_NAME} /bin/sh
@@ -90,23 +84,6 @@ login.frontend: ## Login to frontend container
 
 login.db: ## Login to database container
 	@docker exec -it $${DATABASE_CONTAINER_NAME} /bin/bash
-
-inspect.labels:
-	@docker ps --format '{{.Names}}' | \
-	while read -r name; do \
-		echo "Container: $$name"; \
-		docker inspect "$$name" --format '{{json .Config.Labels}}' | jq .; \
-		echo ""; \
-	done
-
-pgr.list: ## List all postgrest containers
-	@docker ps --filter "name=postgrest_" --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}\t{{.CreatedAt}}\t{{.Status}}"
-
-pgr.destroy: ## Destroy all postgrest containers
-	@docker ps -a -q --filter "name=postgrest_" | xargs -r docker rm -f
-
-pgr.restart: ## Restart all postgrest containers
-	@make udb.restart
 
 docs.generate: ## Generate docs
 	swag init --dir cmd,internal --output docs

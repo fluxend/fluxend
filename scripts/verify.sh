@@ -7,7 +7,7 @@ echo "🔍 Verifying setup..."
 # Sleep briefly to let containers stabilise
 sleep 5
 
-required_containers=("fluxend_api" "fluxend_frontend" "fluxend_db" "traefik")
+required_containers=("fluxend_api" "fluxend_frontend" "fluxend_db" "caddy")
 
 echo "🔍 Checking required containers..."
 
