@@ -24,6 +24,7 @@ import { AppHeader } from "~/components/shared/header";
 import { redirect, useOutletContext } from "react-router";
 import type { ProjectLayoutOutletContext } from "~/components/shared/project-layout";
 import { getAuthToken, getClientAuthToken } from "~/lib/auth";
+import { getProjectApiUrl } from "~/lib/utils";
 import { initializeServices } from "~/services";
 
 export function meta({}: Route.MetaArgs) {
@@ -274,9 +275,6 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     );
   }
 
-  const baseDomain = import.meta.env.VITE_FLX_BASE_DOMAIN;
-  const httpScheme = import.meta.env.VITE_FLX_HTTP_SCHEME;
-
   return (
       <>
         <AppHeader title="Dashboard" />
@@ -311,7 +309,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                     <StatusCard
                         title="PostgREST"
                         status={healthData.postgrest_status}
-                        subtitle={projectStats?.databaseName ? `${httpScheme}://${projectStats.databaseName}.${baseDomain}` : "Loading..."}
+                        subtitle={projectStats?.databaseName ? getProjectApiUrl(projectStats.databaseName) : "Loading..."}
                         icon={Server}
                         isStale={!isHealthLoading && isHealthStale}
                     />
