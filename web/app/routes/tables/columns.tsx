@@ -419,6 +419,7 @@ export const rowsQuery = (
     }
 
     const services = initializeServices(authToken);
+    const projectToken = await services.projects.getProjectToken(projectId);
 
     try {
       const res = await services.tables.getTableRows(
@@ -427,6 +428,7 @@ export const rowsQuery = (
         {
           headers: {
             Prefer: "count=exact",
+            Authorization: `Bearer ${projectToken}`,
           },
           params: {
             limit,

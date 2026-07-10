@@ -10,6 +10,10 @@ export type Project = {
   updatedAt: string;
 };
 
+// Project tokens are valid for 24 hours; refresh well before that
+const projectTokenCache = new Map<string, { token: string; fetchedAt: number }>();
+const PROJECT_TOKEN_TTL_MS = 60 * 60 * 1000;
+
 export const createProjectsService = (authToken: string) => {
   const getProjectDetails = async (projectId: string): Promise<Project> => {
     try {
@@ -35,8 +39,37 @@ export const createProjectsService = (authToken: string) => {
     }
   };
 
+  const getProjectToken = async (projectId: string): Promise<string> => {
+    const cached = projectTokenCache.get(projectId);
+    if (cached && Date.now() - cached.fetchedAt < PROJECT_TOKEN_TTL_MS) {
+      return cached.token;
+    }
+
+    const fetchOptions: APIRequestOptions = {
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken && { Authorization: `Bearer ${authToken}` }),
+      },
+    };
+
+    const response = await get(`/projects/${projectId}/token`, fetchOptions);
+    const result = await response.json();
+
+    if (!result.success || !result.content?.token) {
+      throw new Error(result.errors?.join(", ") || "Failed to fetch project token");
+    }
+
+    projectTokenCache.set(projectId, {
+      token: result.content.token,
+      fetchedAt: Date.now(),
+    });
+
+    return result.content.token;
+  };
+
   return {
     getProjectDetails,
+    getProjectToken,
   };
 };
 

@@ -76,6 +76,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
       };
       
       const baseUrl = getProjectApiUrl(projectDetails?.dbName);
+      const projectToken = await services.projects.getProjectToken(projectId);
 
       const response = await services.tables.updateTableRow(
         projectId,
@@ -84,6 +85,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
         updateData,
         {
           baseUrl,
+          headers: { Authorization: `Bearer ${projectToken}` },
         }
       );
 
@@ -242,6 +244,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
     
     try {
       const baseUrl = getProjectApiUrl(projectDetails.dbName);
+      const projectToken = await services.projects.getProjectToken(projectId);
 
       const response = await services.tables.deleteTableRows(
         projectId,
@@ -249,6 +252,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
         rowIds,
         {
           baseUrl,
+          headers: { Authorization: `Bearer ${projectToken}` },
         }
       );
 
