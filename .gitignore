@@ -26,3 +26,6 @@ go.work.sum
 
 # OS generated files
 .DS_Store
+
+# Local compose overrides
+docker-compose.override.yml
