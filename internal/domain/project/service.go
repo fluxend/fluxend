@@ -152,11 +152,12 @@ func (s *ServiceImpl) Delete(projectUUID uuid.UUID, authUser auth.User) (bool, e
 		return false, errors.NewForbiddenError("project.error.updateForbidden")
 	}
 
+	// Stop PostgREST before dropping so the drop doesn't race its open connections
+	s.postgrestService.Stop(fetchedProject.DBName)
+
 	if err = s.databaseRepo.DropIfExists(fetchedProject.DBName); err != nil {
 		return false, err
 	}
-
-	go s.postgrestService.Stop(fetchedProject.DBName)
 
 	return s.projectRepo.Delete(projectUUID)
 }
