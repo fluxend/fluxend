@@ -45,7 +45,7 @@ func (r *Repository) Create(name string, userUUID uuid.NullUUID) error {
 }
 
 func (r *Repository) DropIfExists(name string) error {
-	_, err := r.db.ExecWithRowsAffected(fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, name))
+	_, err := r.db.ExecWithRowsAffected(fmt.Sprintf(`DROP DATABASE IF EXISTS "%s" WITH (FORCE)`, name))
 	return err
 }
 

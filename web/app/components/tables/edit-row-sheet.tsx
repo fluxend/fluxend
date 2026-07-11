@@ -29,8 +29,9 @@ import {
 } from "~/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "~/lib/utils";
+import { cn, getProjectApiUrl } from "~/lib/utils";
 import type { TablesService } from "~/services/tables";
+import type { ProjectService } from "~/services/projects";
 
 interface EditRowSheetProps {
   open: boolean;
@@ -45,7 +46,7 @@ interface EditRowSheetProps {
   tableId: string;
   projectId: string;
   dbId: string;
-  services: { tables: TablesService };
+  services: { tables: TablesService; projects: ProjectService };
   onSuccess?: () => void;
 }
 
@@ -102,9 +103,7 @@ export function EditRowSheet({
         return;
       }
 
-      // Get environment variables for base URL
-      const baseDomain = import.meta.env.VITE_FLX_BASE_DOMAIN;
-      const httpScheme = import.meta.env.VITE_FLX_HTTP_SCHEME;
+      const projectToken = await services.projects.getProjectToken(projectId);
 
       const response = await services.tables.updateTableRow(
         projectId,
@@ -112,7 +111,8 @@ export function EditRowSheet({
         row.id,
         updateData,
         {
-          baseUrl: `${httpScheme}://${dbId}.${baseDomain}/`,
+          baseUrl: getProjectApiUrl(dbId),
+          headers: { Authorization: `Bearer ${projectToken}` },
         }
       );
 

@@ -105,11 +105,12 @@ export function createTablesService(authToken: string) {
   };
 
   const updateTableRow = async (
-    projectId: string, 
-    tableId: string, 
-    rowId: string, 
+    projectId: string,
+    tableId: string,
+    rowId: string,
     data: any,
     options?: {
+      headers?: HeadersInit;
       baseUrl?: string;
     }
   ) => {
@@ -119,6 +120,7 @@ export function createTablesService(authToken: string) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken}`,
         "Prefer": "return=representation", // Return the updated row
+        ...options?.headers,
       },
       baseUrl: options?.baseUrl,
       params: {
@@ -134,6 +136,7 @@ export function createTablesService(authToken: string) {
     tableId: string,
     rowIds: string[],
     options?: {
+      headers?: HeadersInit;
       baseUrl?: string;
     }
   ) => {
@@ -158,6 +161,7 @@ export function createTablesService(authToken: string) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken}`,
         "Prefer": "count=exact", // Return count of deleted rows
+        ...options?.headers,
       },
       baseUrl: options?.baseUrl,
       params: {

@@ -23,6 +23,5 @@ func init() {
 	RootCmd.AddCommand(seedCmd)
 	RootCmd.AddCommand(routesCmd)
 	RootCmd.AddCommand(udbStats)
-	RootCmd.AddCommand(udbRestart)
 	RootCmd.AddCommand(optimizeCmd)
 }

@@ -35,7 +35,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { formatTimestamp, getTypedResponseData } from "~/lib/utils";
+import { formatTimestamp, getProjectApiUrl, getTypedResponseData } from "~/lib/utils";
 import type { APIResponse } from "~/lib/types";
 import { getClientAuthToken } from "~/lib/auth";
 import { initializeServices } from "~/services";
@@ -409,9 +409,6 @@ export const rowsQuery = (
       return { rows: [], totalCount: 0 };
     }
 
-    const baseDomain = import.meta.env.VITE_FLX_BASE_DOMAIN;
-    const httpScheme = import.meta.env.VITE_FLX_HTTP_SCHEME;
-
     const offset = pagination.pageIndex * pagination.pageSize;
     const limit = pagination.pageSize;
 
@@ -422,6 +419,7 @@ export const rowsQuery = (
     }
 
     const services = initializeServices(authToken);
+    const projectToken = await services.projects.getProjectToken(projectId);
 
     try {
       const res = await services.tables.getTableRows(
@@ -430,6 +428,7 @@ export const rowsQuery = (
         {
           headers: {
             Prefer: "count=exact",
+            Authorization: `Bearer ${projectToken}`,
           },
           params: {
             limit,
@@ -437,7 +436,7 @@ export const rowsQuery = (
             order: "updated_at.desc", // Sort by updated_at descending (newest first)
             ...filters,
           },
-          baseUrl: `${httpScheme}://${dbId}.${baseDomain}/`,
+          baseUrl: getProjectApiUrl(dbId),
         }
       );
 

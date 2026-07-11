@@ -14,6 +14,10 @@ export function isServer() {
   return !isClient();
 }
 
+export function getProjectApiUrl(dbId: string): string {
+  return `${import.meta.env.VITE_FLX_API_URL}/rest/${dbId}/`;
+}
+
 export function getDbIdCookie(headers: Headers): Promise<string> {
   const cookies = headers.get("cookie");
   return dbCookie.parse(cookies);

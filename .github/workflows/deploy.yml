@@ -57,8 +57,6 @@ jobs:
           build-args: |
             VITE_FLX_INTERNAL_URL=${{ secrets.VITE_FLX_INTERNAL_URL }}
             VITE_FLX_API_URL=${{ secrets.VITE_FLX_API_URL }}
-            VITE_FLX_BASE_DOMAIN=${{ secrets.VITE_FLX_BASE_DOMAIN }}
-            VITE_FLX_HTTP_SCHEME=${{ secrets.VITE_FLX_HTTP_SCHEME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -77,9 +75,7 @@ jobs:
           ssh ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "\
             cd ${{ secrets.REMOTE_PATH }} && \
             docker compose pull && \
-            make pgr.destroy && \
-            make build && \
-            docker-compose exec -T fluxend_api ./bin/fluxend udb.restart"
+            make build"
 
       - name: Deployment complete
         run: echo "✅ Deployment complete to ${{ secrets.REMOTE_HOST }}"

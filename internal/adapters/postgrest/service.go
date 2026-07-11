@@ -4,17 +4,18 @@ import (
 	"fluxend/internal/config/constants"
 	"fluxend/internal/domain/project"
 	"fluxend/internal/domain/shared"
-	"fluxend/pkg"
 	"fmt"
+	"net"
+	"os"
+	"os/exec"
+	"sync"
+	"syscall"
+
 	"github.com/rs/zerolog/log"
 	"github.com/samber/do"
-	"os"
-	"strings"
 )
 
-const (
-	ImageName = "postgrest/postgrest"
-)
+const defaultBinaryPath = "postgrest"
 
 type Config struct {
 	DBUser        string
@@ -22,14 +23,21 @@ type Config struct {
 	DBHost        string
 	DBSchema      string
 	DBRole        string
-	BaseDomain    string
 	CustomOrigins string
-	URLScheme     string
+	BinaryPath    string
+}
+
+type process struct {
+	cmd      *exec.Cmd
+	port     int
+	stopping bool
 }
 
 type ServiceImpl struct {
 	projectRepo project.Repository
 	config      *Config
+	mutex       sync.Mutex
+	processes   map[string]*process
 }
 
 func NewPostgrestService(injector *do.Injector) (shared.PostgrestService, error) {
@@ -38,15 +46,19 @@ func NewPostgrestService(injector *do.Injector) (shared.PostgrestService, error)
 		corsOrigins = "*"
 	}
 
+	binaryPath := os.Getenv("POSTGREST_BINARY")
+	if binaryPath == "" {
+		binaryPath = defaultBinaryPath
+	}
+
 	config := &Config{
 		DBUser:        os.Getenv("POSTGREST_DB_USER"),
 		DBPassword:    os.Getenv("POSTGREST_DB_PASSWORD"),
 		DBHost:        os.Getenv("POSTGREST_DB_HOST"),
 		DBSchema:      os.Getenv("POSTGREST_DEFAULT_SCHEMA"),
 		DBRole:        os.Getenv("POSTGREST_DEFAULT_ROLE"),
-		BaseDomain:    os.Getenv("BASE_DOMAIN"),
-		URLScheme:     os.Getenv("URL_SCHEME"),
 		CustomOrigins: corsOrigins,
+		BinaryPath:    binaryPath,
 	}
 
 	projectRepo := do.MustInvoke[project.Repository](injector)
@@ -54,65 +66,106 @@ func NewPostgrestService(injector *do.Injector) (shared.PostgrestService, error)
 	return &ServiceImpl{
 		projectRepo: projectRepo,
 		config:      config,
+		processes:   make(map[string]*process),
 	}, nil
 }
 
-func (s *ServiceImpl) StartContainer(dbName, jwtSecret string) {
-	if err := pkg.ExecuteCommand(s.buildStartCommand(dbName, jwtSecret)); err != nil {
-		log.Error().
-			Str("action", constants.ActionPostgrest).
-			Str("db", dbName).
-			Str("error", err.Error()).
-			Msg("failed to start container")
+func (s *ServiceImpl) Start(dbName, jwtSecret string) {
+	s.mutex.Lock()
+	if _, exists := s.processes[dbName]; exists {
+		s.mutex.Unlock()
 
-		_, err := s.projectRepo.UpdateStatusByDatabaseName(dbName, constants.ProjectStatusError)
-		if err != nil {
-			log.Error().
-				Str("action", constants.ActionPostgrest).
-				Str("dbName", dbName).
-				Str("error", err.Error()).
-				Msg("failed to update project status to error")
-
-			return
-		}
-
+		return
 	}
 
-	// Update project status to active
-	_, err := s.projectRepo.UpdateStatusByDatabaseName(dbName, constants.ProjectStatusActive)
+	port, err := allocateFreePort()
+	if err != nil {
+		s.mutex.Unlock()
+		s.markStartFailed(dbName, err)
+
+		return
+	}
+
+	cmd := exec.Command(s.config.BinaryPath)
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PGRST_DB_URI=postgres://%s:%s@%s/%s", s.config.DBUser, s.config.DBPassword, s.config.DBHost, dbName),
+		"PGRST_DB_ANON_ROLE="+s.config.DBRole,
+		"PGRST_DB_SCHEMA="+s.config.DBSchema,
+		"PGRST_JWT_SECRET="+jwtSecret,
+		"PGRST_SERVER_HOST=127.0.0.1",
+		fmt.Sprintf("PGRST_SERVER_PORT=%d", port),
+		"PGRST_SERVER_CORS_ALLOWED_ORIGINS="+s.config.CustomOrigins,
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		s.mutex.Unlock()
+		s.markStartFailed(dbName, err)
+
+		return
+	}
+
+	proc := &process{cmd: cmd, port: port}
+	s.processes[dbName] = proc
+	s.mutex.Unlock()
+
+	// Write the active status before supervise can run: if the process dies
+	// instantly, supervise's error status must land after this write, not race it
+	_, err = s.projectRepo.UpdateStatusByDatabaseName(dbName, constants.ProjectStatusActive)
 	if err != nil {
 		log.Error().
 			Str("action", constants.ActionPostgrest).
 			Str("db", dbName).
 			Str("error", err.Error()).
 			Msg("failed to update project status to active")
-
-		return
 	}
+
+	go s.supervise(dbName, proc)
 
 	log.Info().
 		Str("action", constants.ActionPostgrest).
 		Str("db", dbName).
-		Msg("container started successfully")
+		Int("port", port).
+		Msg("process started successfully")
 }
 
-func (s *ServiceImpl) RemoveContainer(dbName string) {
-	containerName := s.getContainerName(dbName)
-
-	if err := pkg.ExecuteCommand([]string{"docker", "stop", containerName}); err != nil {
+func (s *ServiceImpl) StartAll() {
+	projects, err := s.projectRepo.List(shared.PaginationParams{Page: 1, Limit: 1000})
+	if err != nil {
 		log.Error().
 			Str("action", constants.ActionPostgrest).
-			Str("db", dbName).
 			Str("error", err.Error()).
-			Msg("failed to stop container")
+			Msg("failed to list projects for startup")
+
+		return
 	}
 
-	if err := pkg.ExecuteCommand([]string{"docker", "rm", containerName}); err != nil {
-		log.Error().
-			Str("action", constants.ActionPostgrest).
-			Str("db", dbName).
-			Str("error", err.Error()).
-			Msg("failed to remove container")
+	for _, currentProject := range projects {
+		if currentProject.DBName == "" {
+			continue
+		}
+
+		s.Start(currentProject.DBName, currentProject.JWTSecret)
+	}
+}
+
+func (s *ServiceImpl) Stop(dbName string) {
+	s.mutex.Lock()
+	proc, exists := s.processes[dbName]
+	if exists {
+		proc.stopping = true
+	}
+	s.mutex.Unlock()
+
+	if exists {
+		if err := proc.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+			log.Error().
+				Str("action", constants.ActionPostgrest).
+				Str("db", dbName).
+				Str("error", err.Error()).
+				Msg("failed to stop process")
+		}
 	}
 
 	_, err := s.projectRepo.UpdateStatusByDatabaseName(dbName, constants.ProjectStatusInactive)
@@ -122,79 +175,105 @@ func (s *ServiceImpl) RemoveContainer(dbName string) {
 			Str("db", dbName).
 			Str("error", err.Error()).
 			Msg("failed to update project status to inactive")
-
-		return
 	}
 }
 
-func (s *ServiceImpl) HasContainer(dbName string) bool {
-	cmd := []string{"docker", "inspect", "--format='{{.State.Running}}'", s.getContainerName(dbName)}
-	output, err := pkg.ExecuteCommandWithOutput(cmd)
-	if err != nil {
-		log.Error().
-			Str("action", constants.ActionPostgrest).
-			Str("db", dbName).
-			Str("error", err.Error()).
-			Msg("failed to check if container exists")
+func (s *ServiceImpl) IsRunning(dbName string) bool {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-		return false
-	}
+	_, exists := s.processes[dbName]
 
-	return strings.Contains(output, "true")
+	return exists
 }
 
-func (s *ServiceImpl) buildStartCommand(dbName, jwtSecret string) []string {
-	response := []string{
-		"docker", "run", "-d", "--name", s.getContainerName(dbName),
-		"--network", "fluxend_network",
-		"-e", fmt.Sprintf("PGRST_DB_URI=postgres://%s:%s@%s/%s", s.config.DBUser, s.config.DBPassword, s.config.DBHost, dbName),
-		"-e", "PGRST_DB_ANON_ROLE=" + s.config.DBRole,
-		"-e", "PGRST_DB_SCHEMA=" + s.config.DBSchema,
-		"-e", "PGRST_JWT_SECRET=" + jwtSecret,
-		"-e", "PGRST_SERVER_CORS_ALLOWED_ORIGINS=" + s.config.CustomOrigins,
-		"-e", "PGRST_SERVER_CORS_ALLOWED_HEADERS=*",
-		"-e", "PGRST_SERVER_CORS_ALLOWED_METHODS=GET,POST,PATCH,PUT,DELETE,OPTIONS,HEAD",
-		"--label", "traefik.enable=true",
-		"--label", fmt.Sprintf("traefik.http.routers.%s.rule=Host(`%s.%s`)", dbName, dbName, s.config.BaseDomain),
-		"--label", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=3000", dbName),
+func (s *ServiceImpl) Endpoint(dbName string) (string, bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-		// Add tracking middleware
-		"--label", fmt.Sprintf("traefik.http.routers.%s.middlewares=track-%s", dbName, dbName),
-		"--label", fmt.Sprintf("traefik.http.middlewares.track-%s.forwardauth.address=%s://api.%s/projects/%s/logs/capture", dbName, s.config.URLScheme, s.config.BaseDomain, dbName),
+	proc, exists := s.processes[dbName]
+	if !exists {
+		return "", false
 	}
 
-	if s.config.URLScheme == "https" {
-		response = append(response,
-			"--label", fmt.Sprintf("traefik.http.routers.%s.tls=true", dbName),
-			"--label", fmt.Sprintf("traefik.http.routers.%s.tls.certresolver=le", dbName),
-			"--label", fmt.Sprintf("traefik.http.routers.%s.entrypoints=websecure", dbName),
-		)
-	} else {
-		response = append(response, "--label", fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", dbName))
-	}
-
-	response = append(response, ImageName)
-	return response
+	return fmt.Sprintf("http://127.0.0.1:%d", proc.port), true
 }
 
 func (s *ServiceImpl) RefreshSchemaCache(dbName string) {
 	// Why we need this: https://postgrest.org/en/v10/schema_cache.html
-	// docker kill -s SIGUSR1 <container>
+	s.mutex.Lock()
+	proc, exists := s.processes[dbName]
+	s.mutex.Unlock()
 
-	containerName := s.getContainerName(dbName)
+	if !exists {
+		log.Error().
+			Str("action", constants.ActionPostgrest).
+			Str("db", dbName).
+			Msg("cannot refresh schema cache, process not running")
 
-	cmd := []string{"docker", "kill", "-s", "SIGUSR1", containerName}
-	if err := pkg.ExecuteCommand(cmd); err != nil {
+		return
+	}
+
+	if err := proc.cmd.Process.Signal(syscall.SIGUSR1); err != nil {
 		log.Error().
 			Str("action", constants.ActionPostgrest).
 			Str("db", dbName).
 			Str("error", err.Error()).
 			Msg("failed to refresh schema cache")
-
-		return
 	}
 }
 
-func (s *ServiceImpl) getContainerName(dbName string) string {
-	return fmt.Sprintf("postgrest_%s", dbName)
+func (s *ServiceImpl) supervise(dbName string, proc *process) {
+	err := proc.cmd.Wait()
+
+	s.mutex.Lock()
+	stopping := proc.stopping
+	delete(s.processes, dbName)
+	s.mutex.Unlock()
+
+	if stopping {
+		return
+	}
+
+	logEvent := log.Error().
+		Str("action", constants.ActionPostgrest).
+		Str("db", dbName)
+	if err != nil {
+		logEvent = logEvent.Str("error", err.Error())
+	}
+	logEvent.Msg("process exited unexpectedly")
+
+	if _, err := s.projectRepo.UpdateStatusByDatabaseName(dbName, constants.ProjectStatusError); err != nil {
+		log.Error().
+			Str("action", constants.ActionPostgrest).
+			Str("db", dbName).
+			Str("error", err.Error()).
+			Msg("failed to update project status to error")
+	}
+}
+
+func (s *ServiceImpl) markStartFailed(dbName string, startErr error) {
+	log.Error().
+		Str("action", constants.ActionPostgrest).
+		Str("db", dbName).
+		Str("error", startErr.Error()).
+		Msg("failed to start process")
+
+	if _, err := s.projectRepo.UpdateStatusByDatabaseName(dbName, constants.ProjectStatusError); err != nil {
+		log.Error().
+			Str("action", constants.ActionPostgrest).
+			Str("db", dbName).
+			Str("error", err.Error()).
+			Msg("failed to update project status to error")
+	}
+}
+
+func allocateFreePort() (int, error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+
+	return listener.Addr().(*net.TCPAddr).Port, nil
 }

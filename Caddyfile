@@ -1,0 +1,7 @@
+{$URL_SCHEME}://{$API_SUB_DOMAIN}.{$BASE_DOMAIN} {
+	reverse_proxy fluxend_api:8080
+}
+
+{$URL_SCHEME}://{$CONSOLE_SUB_DOMAIN}.{$BASE_DOMAIN} {
+	reverse_proxy fluxend_frontend:3000
+}

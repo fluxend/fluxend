@@ -4140,6 +4140,69 @@
                 }
             }
         },
+        "/projects/{projectUUID}/token": {
+            "get": {
+                "description": "Get a JWT token signed with the project's signing secret for direct PostgREST access",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Get project token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer Token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Project UUID",
+                        "name": "projectUUID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request response",
+                        "schema": {
+                            "$ref": "#/definitions/response.BadRequestErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized response",
+                        "schema": {
+                            "$ref": "#/definitions/response.UnauthorizedErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden response",
+                        "schema": {
+                            "$ref": "#/definitions/response.ForbiddenErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error response",
+                        "schema": {
+                            "$ref": "#/definitions/response.InternalServerErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/tables": {
             "get": {
                 "description": "Retrieve a list of tables in a specified project.",
@@ -6472,6 +6535,28 @@
                     },
                     "example": [
                         "Invalid input parameter"
+                    ]
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "response.ForbiddenErrorResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Forbidden access"
                     ]
                 },
                 "success": {

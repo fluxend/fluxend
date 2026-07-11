@@ -30,6 +30,7 @@ import { Button } from "~/components/ui/button";
 import { Trash2, Pencil, FileText } from "lucide-react";
 import { toast } from "sonner";
 import type { TableRow, CellValue } from "~/types/table";
+import { getProjectApiUrl } from "~/lib/utils";
 
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_PAGE_INDEX = 0;
@@ -74,10 +75,9 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
         [columnName]: value
       };
       
-      const baseDomain = import.meta.env.VITE_FLX_BASE_DOMAIN;
-      const httpScheme = import.meta.env.VITE_FLX_HTTP_SCHEME;
-      const baseUrl = `${httpScheme}://${projectDetails?.dbName}.${baseDomain}/`;
-      
+      const baseUrl = getProjectApiUrl(projectDetails?.dbName);
+      const projectToken = await services.projects.getProjectToken(projectId);
+
       const response = await services.tables.updateTableRow(
         projectId,
         tableId,
@@ -85,6 +85,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
         updateData,
         {
           baseUrl,
+          headers: { Authorization: `Bearer ${projectToken}` },
         }
       );
 
@@ -242,9 +243,8 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
     setIsDeletingRows(true);
     
     try {
-      const baseDomain = import.meta.env.VITE_FLX_BASE_DOMAIN;
-      const httpScheme = import.meta.env.VITE_FLX_HTTP_SCHEME;
-      const baseUrl = `${httpScheme}://${projectDetails.dbName}.${baseDomain}/`;
+      const baseUrl = getProjectApiUrl(projectDetails.dbName);
+      const projectToken = await services.projects.getProjectToken(projectId);
 
       const response = await services.tables.deleteTableRows(
         projectId,
@@ -252,6 +252,7 @@ export default function TablePageContent({ params }: Route.ComponentProps) {
         rowIds,
         {
           baseUrl,
+          headers: { Authorization: `Bearer ${projectToken}` },
         }
       );
 

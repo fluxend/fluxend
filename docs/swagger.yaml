@@ -500,6 +500,21 @@ definitions:
         example: false
         type: boolean
     type: object
+  response.ForbiddenErrorResponse:
+    properties:
+      content:
+        example: "null"
+        type: string
+      errors:
+        example:
+        - Forbidden access
+        items:
+          type: string
+        type: array
+      success:
+        example: false
+        type: boolean
+    type: object
   response.InternalServerErrorResponse:
     properties:
       content:
@@ -3331,6 +3346,49 @@ paths:
         "500":
           description: Internal server error
       summary: Retrieve project statistics
+      tags:
+      - Projects
+  /projects/{projectUUID}/token:
+    get:
+      consumes:
+      - application/json
+      description: Get a JWT token signed with the project's signing secret for direct
+        PostgREST access
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Project UUID
+        in: path
+        name: projectUUID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Project token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad request response
+          schema:
+            $ref: '#/definitions/response.BadRequestErrorResponse'
+        "401":
+          description: Unauthorized response
+          schema:
+            $ref: '#/definitions/response.UnauthorizedErrorResponse'
+        "403":
+          description: Forbidden response
+          schema:
+            $ref: '#/definitions/response.ForbiddenErrorResponse'
+        "500":
+          description: Internal server error response
+          schema:
+            $ref: '#/definitions/response.InternalServerErrorResponse'
+      summary: Get project token
       tags:
       - Projects
   /tables:

@@ -105,6 +105,7 @@ func InitializeContainer() *do.Injector {
 	do.Provide(injector, client.NewClientService)
 	do.Provide(injector, stats.NewDatabaseStatsService)
 	do.Provide(injector, postgrest.NewPostgrestService)
+	do.Provide(injector, handlers.NewPostgrestProxyHandler)
 	do.Provide(injector, handlers.NewStatHandler)
 
 	// --- Tables ---

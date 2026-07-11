@@ -22,7 +22,4 @@ func RegisterProjectRoutes(e *echo.Echo, container *do.Injector, authMiddleware 
 	projectsGroup.GET("/:projectUUID/token", projectController.Token)
 
 	projectsGroup.GET("/:projectUUID/stats", statHandler.Retrieve)
-
-	// track postgrest requests
-	e.GET("projects/:dbName/logs/capture", projectController.StoreLogs)
 }

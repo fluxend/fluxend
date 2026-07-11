@@ -4,12 +4,12 @@ import (
 	"fluxend/internal/adapters/storage"
 	"fluxend/internal/config/constants"
 	"fluxend/internal/domain/setting"
-	"fluxend/pkg"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/samber/do"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -51,14 +51,7 @@ func (s *WorkflowServiceImpl) Create(databaseName string, backupUUID uuid.UUID) 
 		return
 	}
 
-	// 2. Copy backup file to app container
-	if err := s.copyBackupToAppContainer(backupFilePath, backupUUID); err != nil {
-		s.handleBackupFailure(backupUUID, constants.BackupStatusCreatingFailed, err.Error())
-
-		return
-	}
-
-	// 3. Ensure backup container exists
+	// 2. Ensure backup container exists
 	if err := s.ensureBackupContainerExists(); err != nil {
 		s.handleBackupFailure(backupUUID, constants.BackupStatusCreatingFailed, err.Error())
 
@@ -72,20 +65,20 @@ func (s *WorkflowServiceImpl) Create(databaseName string, backupUUID uuid.UUID) 
 		return
 	}
 
-	// 4. Upload backup to S3
+	// 3. Upload backup to S3
 	if err = s.uploadBackup(databaseName, backupUUID, fileBytes); err != nil {
 		s.handleBackupFailure(backupUUID, constants.BackupStatusCreatingFailed, err.Error())
 
 		return
 	}
 
-	// 5. Update backup status to completed
+	// 4. Update backup status to completed
 	err = s.backupRepo.UpdateStatus(backupUUID, constants.BackupStatusCreated, "", time.Now())
 	if err != nil {
 		s.handleBackupFailure(backupUUID, constants.BackupStatusCreatingFailed, err.Error())
 	}
 
-	// 6. Remove backup file from app container
+	// 5. Remove backup file from app container
 	if err = os.Remove(backupFilePath); err != nil {
 		log.Error().
 			Str("action", constants.ActionBackup).
@@ -131,44 +124,22 @@ func (s *WorkflowServiceImpl) Delete(databaseName string, backupUUID uuid.UUID) 
 }
 
 func (s *WorkflowServiceImpl) executePgDump(databaseName, backupFilePath string) error {
-	command := []string{
-		"docker",
-		"exec",
-		os.Getenv("DATABASE_CONTAINER_NAME"),
+	cmd := exec.Command(
 		"pg_dump",
-		"-U",
-		os.Getenv("DATABASE_USER"),
-		"-d",
-		databaseName,
+		"-h", os.Getenv("DATABASE_HOST"),
+		"-U", os.Getenv("DATABASE_USER"),
+		"-d", databaseName,
 		"-f", backupFilePath,
-	}
+	)
+	cmd.Env = append(os.Environ(), "PGPASSWORD="+os.Getenv("DATABASE_PASSWORD"))
 
-	if err := pkg.ExecuteCommand(command); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Error().
 			Str("action", constants.ActionBackup).
 			Str("db", databaseName).
-			Str("backup_uuid", backupFilePath).
+			Str("output", string(output)).
+			Str("error", err.Error()).
 			Msg("failed to execute pg_dump command")
-
-		return err
-	}
-
-	return nil
-}
-
-func (s *WorkflowServiceImpl) copyBackupToAppContainer(backupFilePath string, backupUUID uuid.UUID) error {
-	dockerCpCommand := []string{
-		"docker",
-		"cp",
-		fmt.Sprintf("%s:%s", os.Getenv("DATABASE_CONTAINER_NAME"), backupFilePath), // Source
-		fmt.Sprintf("/tmp/%s.sql", backupUUID),                                     // Destination inside app container
-	}
-
-	if err := pkg.ExecuteCommand(dockerCpCommand); err != nil {
-		log.Error().
-			Str("action", constants.ActionBackup).
-			Str("backup_uuid", backupUUID.String()).
-			Msg("failed to copy backup file from fluxend_db to fluxend_api container")
 
 		return err
 	}

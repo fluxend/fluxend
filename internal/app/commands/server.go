@@ -7,6 +7,7 @@ import (
 	"fluxend/internal/config/constants"
 	"fluxend/internal/domain/logging"
 	"fluxend/internal/domain/setting"
+	"fluxend/internal/domain/shared"
 	"fluxend/internal/domain/user"
 	"fmt"
 	"github.com/getsentry/sentry-go"
@@ -30,8 +31,12 @@ var serverCmd = &cobra.Command{
 }
 
 func startServer() {
-	e := SetupServer(app.InitializeContainer())
+	container := app.InitializeContainer()
+	e := SetupServer(container)
 	validateEnvVariables()
+
+	postgrestService := do.MustInvoke[shared.PostgrestService](container)
+	go postgrestService.StartAll()
 
 	e.Logger.Fatal(e.Start("0.0.0.0:8080"))
 }
@@ -61,6 +66,10 @@ func SetupServer(container *do.Injector) *echo.Echo {
 
 func getCorsConfig() middleware.CORSConfig {
 	return middleware.CORSConfig{
+		// PostgREST handles CORS for proxied project APIs itself
+		Skipper: func(c echo.Context) bool {
+			return strings.HasPrefix(c.Request().URL.Path, "/rest/")
+		},
 		AllowOriginFunc: func(origin string) (bool, error) {
 			if isOriginAllowed(origin) {
 				return true, nil
@@ -114,6 +123,7 @@ func registerRoutes(e *echo.Echo, container *do.Injector) {
 	routes.RegisterStorageRoutes(e, container, authMiddleware, allowStorageMiddleware)
 	routes.RegisterFunctionRoutes(e, container, authMiddleware)
 	routes.RegisterBackup(e, container, authMiddleware, allowBackupMiddleware)
+	routes.RegisterPostgrestProxy(e, container)
 
 	e.GET("/", func(c echo.Context) error {
 		response := map[string]string{
@@ -132,9 +142,6 @@ func validateEnvVariables() {
 		"BASE_URL",
 		"CONSOLE_URL",
 		"API_URL",
-		"API_CONTAINER_NAME",
-		"DATABASE_CONTAINER_NAME",
-		"FRONTEND_CONTAINER_NAME",
 		"DATABASE_HOST",
 		"DATABASE_USER",
 		"DATABASE_PASSWORD",

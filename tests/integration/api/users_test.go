@@ -96,7 +96,7 @@ func TestUserRegistration_Suite(t *testing.T) {
 
 		// Second registration with same email
 		userInputB := userInputA
-		userInputB.Username = pkg.Faker.Person().FirstName()
+		userInputB.Username = "user_" + pkg.Faker.RandomStringWithLength(10)
 
 		responseB := server.PostJSON(t, "/users/register", userInputB)
 		defer responseB.Body.Close()
@@ -373,7 +373,7 @@ func TestUserProfileAccess_Suite(t *testing.T) {
 
 func getFakeUserData() userDto.CreateRequest {
 	return userDto.CreateRequest{
-		Username: pkg.Faker.Person().FirstName(),
+		Username: "user_" + pkg.Faker.RandomStringWithLength(10),
 		Email:    pkg.Faker.RandomStringWithLength(10) + "@gmail.com",
 		Password: pkg.Faker.Internet().Password(),
 		Bio:      pkg.Faker.RandomStringWithLength(20),

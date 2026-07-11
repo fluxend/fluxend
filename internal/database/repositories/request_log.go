@@ -4,6 +4,7 @@ import (
 	"fluxend/internal/domain/logging"
 	"fluxend/internal/domain/shared"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/samber/do"
 	"strings"
 )
@@ -164,8 +165,8 @@ func (r *RequestLogRepository) CreatePostgrest(storeInput *logging.StoreInput) e
 	_, err := r.db.Exec(
 		query,
 		storeInput.ProjectUUID,
-		nil, // user_uuid
-		"",  // api_key
+		nil,      // user_uuid
+		uuid.Nil, // api_key
 		storeInput.Method,
 		storeInput.Endpoint,
 		storeInput.IPAddress,
