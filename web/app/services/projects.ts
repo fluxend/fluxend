@@ -40,7 +40,10 @@ export const createProjectsService = (authToken: string) => {
   };
 
   const getProjectToken = async (projectId: string): Promise<string> => {
-    const cached = projectTokenCache.get(projectId);
+    // Key by session token too: a project token embeds the requesting user's
+    // database role, so it must never be reused across sessions
+    const cacheKey = `${authToken}:${projectId}`;
+    const cached = projectTokenCache.get(cacheKey);
     if (cached && Date.now() - cached.fetchedAt < PROJECT_TOKEN_TTL_MS) {
       return cached.token;
     }
@@ -59,7 +62,7 @@ export const createProjectsService = (authToken: string) => {
       throw new Error(result.errors?.join(", ") || "Failed to fetch project token");
     }
 
-    projectTokenCache.set(projectId, {
+    projectTokenCache.set(cacheKey, {
       token: result.content.token,
       fetchedAt: Date.now(),
     });

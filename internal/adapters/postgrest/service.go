@@ -110,8 +110,8 @@ func (s *ServiceImpl) Start(dbName, jwtSecret string) {
 	s.processes[dbName] = proc
 	s.mutex.Unlock()
 
-	go s.supervise(dbName, proc)
-
+	// Write the active status before supervise can run: if the process dies
+	// instantly, supervise's error status must land after this write, not race it
 	_, err = s.projectRepo.UpdateStatusByDatabaseName(dbName, constants.ProjectStatusActive)
 	if err != nil {
 		log.Error().
@@ -119,9 +119,9 @@ func (s *ServiceImpl) Start(dbName, jwtSecret string) {
 			Str("db", dbName).
 			Str("error", err.Error()).
 			Msg("failed to update project status to active")
-
-		return
 	}
+
+	go s.supervise(dbName, proc)
 
 	log.Info().
 		Str("action", constants.ActionPostgrest).
